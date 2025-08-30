@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест Telegram бота</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Тест отправки в Telegram</h1>
+    
+    <form id="test-form">
+        <div class="form-group">
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="Name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Телефон:</label>
+            <input type="tel" id="phone" name="Phone" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="company">Организация:</label>
+            <input type="text" id="company" name="Company">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="Email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Сообщение:</label>
+            <textarea id="message" name="Message" rows="4" required></textarea>
+        </div>
+        
+        <button type="submit">Отправить тестовое сообщение</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <script>
+        // Конфигурация Telegram бота
+        const TOKEN = '7938942548:AAGVWdhUxgtUbnfwmDziVAihr18qzBAjhQE';
+        const CHAT_ID = '7938942548';
+        const URL_API = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+
+        // Функция для отправки сообщения в Telegram
+        async function sendToTelegram(message) {
+            try {
+                const response = await fetch(URL_API, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        parse_mode: 'HTML',
+                        text: message
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.ok) {
+                    return { success: true, data: result };
+                } else {
+                    return { success: false, error: result.description };
+                }
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Функция для форматирования сообщения
+        function formatMessage(formData) {
+            const name = formData.get('Name') || 'Не указано';
+            const phone = formData.get('Phone') || 'Не указано';
+            const company = formData.get('Company') || 'Не указано';
+            const email = formData.get('Email') || 'Не указано';
+            const message = formData.get('Message') || 'Не указано';
+            
+            return `🧪 <b>ТЕСТОВОЕ СООБЩЕНИЕ</b>
+
+👤 <b>Имя:</b> ${name}
+📱 <b>Телефон:</b> ${phone}
+🏢 <b>Организация:</b> ${company}
+📧 <b>Email:</b> ${email}
+💬 <b>Сообщение:</b> ${message}
+
+⏰ <b>Время отправки:</b> ${new Date().toLocaleString('ru-RU')}`;
+        }
+
+        // Обработчик формы
+        document.getElementById('test-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const resultDiv = document.getElementById('result');
+            
+            // Показываем состояние загрузки
+            submitButton.textContent = 'Отправляем...';
+            submitButton.disabled = true;
+            
+            // Очищаем предыдущие сообщения
+            resultDiv.innerHTML = '';
+            
+            try {
+                // Собираем данные формы
+                const formData = new FormData(this);
+                
+                // Форматируем сообщение
+                const message = formatMessage(formData);
+                
+                // Отправляем в Telegram
+                const result = await sendToTelegram(message);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = '<div class="message success">✅ Сообщение успешно отправлено в Telegram!</div>';
+                    this.reset();
+                } else {
+                    resultDiv.innerHTML = `<div class="message error">❌ Ошибка отправки: ${result.error}</div>`;
+                    console.error('Telegram API Error:', result.error);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="message error">❌ Произошла ошибка при отправке формы.</div>';
+                console.error('Form submission error:', error);
+            } finally {
+                // Восстанавливаем кнопку
+                submitButton.textContent = 'Отправить тестовое сообщение';
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html> 
